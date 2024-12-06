@@ -28,7 +28,6 @@ jobs:
       run: |
         docker build -t ${{ secrets.DOCKER_USERNAME }}/opentelemetry-demo:latest .
         docker push ${{ secrets.DOCKER_USERNAME }}/opentelemetry-demo:latest
-
   deploy:
     runs-on: ubuntu-latest
 
@@ -45,3 +44,4 @@ jobs:
         script: |
           echo "Logging into EC2"
           kubectl apply -f deployment.yaml
+          
