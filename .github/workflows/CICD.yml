@@ -34,7 +34,7 @@ jobs:
     - name: Authenticate with Docker Hub
       uses: docker/login-action@v2
       with:
-        username: ${{ secrets.DOCKER_USERNAME }}
+        username: ${{ secrets.DOCKER_USERNAME }} # Docker Hub username
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Verify Docker Login
@@ -47,35 +47,34 @@ jobs:
         docker-compose build
         docker-compose push
 
+
   deploy:
     runs-on: ubuntu-latest
-    needs: build
-    environment: production
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Set up kubectl
-      run: |
-        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-        chmod +x kubectl
-        sudo mv kubectl /usr/local/bin/
-        kubectl version --client
+      - name: Set up AWS CLI
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set default.region us-east-1
 
-    - name: Authenticate with EKS
-      run: |
-        aws eks update-kubeconfig --region us-east-1 --name otel-demo-cluster
+      - name: Set up kubectl
+        run: |
+          aws eks --region us-east-1 update-kubeconfig --name otel-demo-cluster
 
-    - name: Deploy to EKS
-      run: |
-        kubectl set image deployment/otel-demo-app otel-demo-app=sagarswagh/opentelemetry-demo:${{ github.sha }}
-        kubectl rollout status deployment/otel-demo-app
+      - name: Deploy to EKS
+        run: |
+          kubectl config current-context
+          kubectl set image deployment/otel-demo-app opentelemetry-demo=sagarswagh/opentelemetry-demo:latest-loadgenerator
+          kubectl rollout status deployment/otel-demo-app
+
 
   rollback:
     runs-on: ubuntu-latest
-    if: failure()  # Run only if the deploy job fails
+    if: failure()
     needs: deploy
-    environment: production
     steps:
     - name: Rollback to previous stable version
       run: |
