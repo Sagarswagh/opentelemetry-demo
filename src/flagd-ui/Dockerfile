@@ -5,6 +5,10 @@ FROM node:20 AS builder
 
 WORKDIR /app
 
+# Dummy ARG to prevent cache
+ARG CACHE_BUSTER=1
+RUN echo $CACHE_BUSTER
+
 COPY ./src/flagd-ui/package*.json ./
 
 RUN npm ci
@@ -18,6 +22,10 @@ RUN npm run build
 FROM node:20-alpine
 
 WORKDIR /app
+
+# Dummy ARG to prevent cache
+ARG CACHE_BUSTER=1
+RUN echo $CACHE_BUSTER
 
 COPY ./src/flagd-ui/package*.json ./
 
